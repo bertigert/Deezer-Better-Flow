@@ -8,3 +8,8 @@ Requires https://github.com/bertigert/Deezer-Webpack-Patcher to be installed as 
 
 
 Also on Desktop using [DeezMod](https://github.com/bertigert/DeezMod): https://github.com/bertigert/DeezMod/tree/main/plugins/better_flow
+
+## Links
+[Greazyfork](https://greasyfork.org/en/scripts/547519-better-flow)
+
+[GitHub](https://github.com/bertigert/Deezer-Better-Flow)
