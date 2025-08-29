@@ -2,7 +2,7 @@
 // @name        Better Flow
 // @description Makes editing the queue in flow possible.
 // @author      bertigert
-// @version     1.0.0
+// @version     1.0.1
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=deezer.com
 // @namespace   Violentmonkey Scripts
 // @match       https://www.deezer.com/*
@@ -149,18 +149,20 @@
         }
     }
 
-    const logger = new Logger(true);
+    const logger = new Logger(false);
 
-    DeezerPlayerHook.detect_and_hook_dzplayer((dzPlayer) => {
-        DeezerPlayerHook.hook_onLoadedTracks();
-    });
 
     (function wait_for_webpack_patcher(){
         if (window.register_webpack_patches) {
             logger.debug("Registering webpack patches");
             window.register_webpack_patches(PATCHES);
-        } else {
+            DeezerPlayerHook.detect_and_hook_dzplayer((dzPlayer) => {
+                DeezerPlayerHook.hook_onLoadedTracks();
+            });
+        } else if (!window.webpackJsonpDeezer) {
             setTimeout(wait_for_webpack_patcher, 0);
+        } else {
+            logger.warn("Webpack array found, but not patcher, stopping");
         }
     })();
 })();
