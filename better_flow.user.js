@@ -2,7 +2,7 @@
 // @name        Better Flow
 // @description Makes editing the queue in flow possible.
 // @author      bertigert
-// @version     1.0.2
+// @version     1.0.3
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=deezer.com
 // @namespace   Violentmonkey Scripts
 // @match       https://www.deezer.com/*
@@ -13,14 +13,14 @@
 
 (function() {
     "use strict";
-
+    
     class Logger {
         static PREFIX = "[Better Flow]";
-
+        
         constructor(debug=false) {
             this.should_debug = debug;
         }
-
+        
         debug(...args) {if (this.should_debug) console.debug(Logger.PREFIX, ...args);}
         log(...args) {console.log(Logger.PREFIX, ...args);}
         warn(...args) {console.warn(Logger.PREFIX, ...args);}
@@ -56,82 +56,68 @@
         }
     }
 
+    
+    const PATCHES = [
+        {
+            find: ["dispatchRemoveSong:e,"],
+            replacements: [
+                {
+                    match: /isPlayable\(\)\{const\{([^}]*)playerIsRadio:([a-z]+)(?:,)?/g,
+                    replace: (_, $1, $2) => `isPlayable(){const ${$2}=false,{${$1}`,
+                }
+            ]
+        },
+        {
+            find: ["this.handleConfirm=this.handleConfirm.bind(this)"],
+            replacements: [
+                {
+                    match: /isPlayable\(\)\{const\{([^}]*)playerIsRadio:([a-z])(?:,)?/g,
+                    replace: (_, $1, $2) => `isPlayable(){const ${$2}=false,{${$1}`,
+                }
+            ]
+        },
+        {
+            find: ["getStorageKey:e=>`ALERT_DISMISSED_${e}"],
+            replacements: [
+                {
+                    match: "e?t+1:",
+                    replace: "",
+                },
+                {
+                    match: "const{index:e,isRadio:t",
+                    replace: "const t=false,{index:e",
+                },
+            ]
+        },
+        {
 
-    const PATCHES = {
-        555: {
-            methods: [
+            find: ["=1209600;"],
+            replacements: [
                 {
-                    identifiers: ["dispatchRemoveSong:e,"],
-                    matches_and_replacements: [
-                        {
-                            match: /isPlayable\(\)\{const\{([^}]*)playerIsRadio:([a-z]+)(?:,)?/g,
-                            replace: (_, $1, $2) => `isPlayable(){const ${$2}=false,{${$1}`,
-                        }
-                    ]
-                },
-                {
-                    identifiers: ["this.handleConfirm=this.handleConfirm.bind(this)"],
-                    matches_and_replacements: [
-                        {
-                            match: /isPlayable\(\)\{const\{([^}]*)playerIsRadio:([a-z])(?:,)?/g,
-                            replace: (_, $1, $2) => `isPlayable(){const ${$2}=false,{${$1}`,
-                        }
-                    ]
+                    match: /addNext:function(.*)if\([a-zA-Z]+\.isRadio\(\)\)return!1;/,
+                    replace: (_, $1) => `addNext:function${$1}`,
                 }
             ]
         },
-        2416: {
-            methods: [
+        {
+            find: [`JSON.parse('{"default":`],
+            replacements: [
                 {
-                    identifiers: ["getStorageKey:e=>`ALERT_DISMISSED_${e}"],
-                    matches_and_replacements: [
-                        {
-                            match: "e?t+1:",
-                            replace: "",
-                        },
-                        {
-                            match: "const{index:e,isRadio:t",
-                            replace: "const t=false,{index:e",
-                        },
-                    ]
-                }
-            ]
-        },
-        9281: {
-            methods: [
-                {
-                    identifiers: ["=1209600;"],
-                    matches_and_replacements: [
-                        {
-                            match: /addNext:function(.*)if\([a-zA-Z]+\.isRadio\(\)\)return!1;/,
-                            replace: (_, $1) => `addNext:function${$1}`,
-                        }
-                    ]
-                },
-            ]
-        },
-        9842: {
-            methods: [
-                {
-                    identifiers: [`JSON.parse('{"default":`],
-                    matches_and_replacements: [
-                        {
-                            match: /NB_SONG\|\|[a-zA-Z]+\.[a-zA-Z]+\.isRadio\(\)/,
-                            replace: "NB_SONG",
-                        }
-                    ]
+                    match: /NB_SONG\|\|[a-zA-Z]+\.[a-zA-Z]+\.isRadio\(\)/,
+                    replace: "NB_SONG",
                 }
             ]
         }
-    }
-
+    ];
+    
     const logger = new Logger(false);
 
-
     (function wait_for_webpack_patcher(){
-        if (window.register_webpack_patches) {
+        if (window.WebpackPatcher) {
             logger.debug("Registering webpack patches");
-            window.register_webpack_patches(PATCHES);
+            window.WebpackPatcher.register({
+                name: "Better Flow"
+            }, PATCHES);
             DeezerPlayerHook.detect_and_hook_dzplayer((dzPlayer) => {
                 DeezerPlayerHook.hook_onLoadedTracks();
             });
