@@ -2,7 +2,7 @@
 // @name        Better Flow
 // @description Makes editing the queue in flow possible.
 // @author      bertigert
-// @version     1.0.3
+// @version     1.0.4
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=deezer.com
 // @namespace   Violentmonkey Scripts
 // @match       https://www.deezer.com/*
@@ -13,14 +13,14 @@
 
 (function() {
     "use strict";
-    
+
     class Logger {
         static PREFIX = "[Better Flow]";
-        
+
         constructor(debug=false) {
             this.should_debug = debug;
         }
-        
+
         debug(...args) {if (this.should_debug) console.debug(Logger.PREFIX, ...args);}
         log(...args) {console.log(Logger.PREFIX, ...args);}
         warn(...args) {console.warn(Logger.PREFIX, ...args);}
@@ -56,27 +56,20 @@
         }
     }
 
-    
+
     const PATCHES = [
         {
-            find: ["dispatchRemoveSong:e,"],
+            // make addNext and addQueue buttons show up
+            find: /{const\{[^}]*playerIsRadio:[a-zA-Z]+,?/,
             replacements: [
                 {
-                    match: /isPlayable\(\)\{const\{([^}]*)playerIsRadio:([a-z]+)(?:,)?/g,
-                    replace: (_, $1, $2) => `isPlayable(){const ${$2}=false,{${$1}`,
+                    match: /{const\{([^}]*)playerIsRadio:([a-zA-Z]+)(?:,)?/g,
+                    replace: (_, $1, $2) => `{const ${$2}=false,{${$1}`,
                 }
             ]
         },
         {
-            find: ["this.handleConfirm=this.handleConfirm.bind(this)"],
-            replacements: [
-                {
-                    match: /isPlayable\(\)\{const\{([^}]*)playerIsRadio:([a-z])(?:,)?/g,
-                    replace: (_, $1, $2) => `isPlayable(){const ${$2}=false,{${$1}`,
-                }
-            ]
-        },
-        {
+            // make entire flow queue visible (and thus editable)
             find: ["getStorageKey:e=>`ALERT_DISMISSED_${e}"],
             replacements: [
                 {
@@ -90,7 +83,7 @@
             ]
         },
         {
-
+            // addNext has additional checks for radio
             find: ["=1209600;"],
             replacements: [
                 {
@@ -100,6 +93,7 @@
             ]
         },
         {
+            // make playlists and albums context menus work in flow
             find: [`JSON.parse('{"default":`],
             replacements: [
                 {
@@ -109,7 +103,7 @@
             ]
         }
     ];
-    
+
     const logger = new Logger(false);
 
     (function wait_for_webpack_patcher(){
